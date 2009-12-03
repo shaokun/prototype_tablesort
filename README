@@ -1,0 +1,193 @@
+Table Sorting with Prototype
+
+Patched http://tetlaw.id.au/view/blog/table-sorting-with-prototype/ to support rowspan table.
+
+
+Simple Usage
+Installation
+
+Reference the script in your HTML and give your tables a class of "sortable", sit back and watch the magic happen.
+
+<script type="text/javascript" src="scriptaculous/lib/prototype.js"></script>
+<script type="text/javascript" src="fastinit.js"></script>
+<script type="text/javascript" src="tablesort.js"></script>
+
+Prototype and tablesort.js are required of course; Fastinit is optional.
+
+If the table has a thead then the last row of the thead (the one closest to the body) will be used as the header row to add the sorting 'onclick' event listeners - one to each header cell. If there is no thead the first table row will be used. Only rows in the table body are sorted, all other cells (in the thead or tfoot) are ignored.
+Sorting Types
+
+The table will attempt to automatically detect the sorting type for your columns (text, number, date...etc) by analysing the first cell. If you don't want it to do that you can specify the exact sorting by adding a class to your header cell for example class="number". Available ones are:
+
+    * "date-iso" // e.g. 2005-03-26T19:51:34Z
+    * "date" // e.g. Mon, 18 Dec 1995 17:28:35 GMT
+    * "date-au" // e.g. 25/12/2006 05:30:00 PM
+    * "date-eu" // e.g. 25-12-2006
+    * "date-us" // e.g. 12/25/2006 05:30:00 PM
+    * "time" // e.g. 05:30:00 PM
+    * "currency" // e.g. $55.00 - detects: $ £ ¥ € ¤
+    * "datasize" // e.g. 30MB - detects: B, KB, MB, GB, TB
+    * "number"
+    * "casesensitivetext"
+    * "text"
+
+A special notes about dates: By default the script's automatic sort type detection will favour Australian dates, dd/mm/yyyy. If you want it to favour US dates, mm/dd/yyyy, then either add the class "date-us" to the header cell on the date column or read Advanced Usage below.
+No Sort columns
+
+If you don't want a column to be sorted then give the header cell a class of "nosort"
+Sort First Column
+
+If you want a column to be sorted when the page loads then add a class to the header cell of that column; "sortfirstasc" for ascending and "sortfirstdesc" for descending.
+Other CSS Hooks
+
+header cells will be given the class "sortcol", and when sorted they will be given the class "sortasc" for ascending and "sortdesc" for descending.
+
+Body rows will also be given the alternating classes "rowodd" and "roweven" on load and after each sort as an added bonus.
+
+You can see the CSS in the demo for an example of what to do with them.
+Advanced Usage
+Detectors
+
+Automatic detection is handled by an array of regular expressions. The script will take the inner text of the cell and pass it through the array from start to finish, the first one that matches is the sort type used. You can add a detector to the array by using SortableTable.addDetector(regexp, name). The regular expression is used to detect a match. If the match is successful the sort type identified by the name is used. For example here's the detector for European Dates:
+
+SortableTable.addDetector(/^d{2}-d{2}-d{4}/i, 'date-eu');
+Sorting Types
+
+An associative array of sort types is maintained by the script. Each sort type has a key which matches the classname and the detector name.
+
+The sort type is a function that takes 2 arguments, the 2 values being compared, and returns either 1, 0 or -1. 1 if a is greater than b, -1 if b is greater than a and 0 if they are equal. The default comparison function, SortableTable.compare(a,b) looks like this:
+
+function(a,b) {
+  return a < b ? -1 : a == b ? 0 : 1;
+}
+
+Sort type functions can make use of this function for the final comparison. Usually thought you have to normalise the 2 values to get a useful comparision. For example the standard text sort type function looks like this:
+
+function(a,b) {
+  return SortableTable.compare(a ? a.toLowerCase() : '', b ? b.toLowerCase() : '');
+}
+
+Important: sort type functions need to be able to cope with an empty string (in situations where a cell is empty or part of a spanned cell). Here's another example - the sort function for numbers:
+
+function(a,b) {
+  // This will grab the first thing that looks like a number from a string, so you can use it to order a column of various srings containing numbers.
+  var calc = function(v) {
+    v = parseFloat(v.replace(/^.*?([-+]?[d]*.?[d]+(?:[eE][-+]?[d]+)?).*$/,"$1"));
+  return isNaN(v) ? 0 : v;
+  }
+  return SortableTable.compare(calc(a),calc(b));
+}
+
+Look through the in-built sort types for more examples. You can add them using the function: SortableTable.addSortType(name, function)
+
+for example:
+
+SortableTable.addSortType('text', function(a,b) {
+  var calc = function(v) {
+    v = parseFloat(v.replace(/^.*?([-+]?[d]*.?[d]+(?:[eE][-+]?[d]+)?).*$/,"$1"));
+    return isNaN(v) ? 0 : v;
+  }
+  return SortableTable.compare(calc(a),calc(b));
+});
+
+Wrapping it up
+
+So when adding the ability to handle a new sort type consider adding a detector as well as a sort type function. For adding multiple types and detectors see options below.
+Options
+
+To change any of the defaults you must use the SortableTable.setup({options}) function and call it before the page loads and the script is initialised.
+
+the default options are:
+
+autoLoad : true
+
+Initialises table sorting automatically, use Fastinit for a speed boost!
+
+tableSelector : ['table.sortable']
+
+This can be changed to any other CSS selector, or mupltiple selectors (it's an array) so you can apply table sorting as you require.
+
+columnClass : 'sortcol'
+descendingClass : 'sortdesc'
+ascendingClass : 'sortasc'
+nosortClass : 'nosort'
+sortFirstAscendingClass : 'sortfirstasc'
+sortFirstDecendingClass : 'sortfirstdesc'
+rowEvenClass : 'roweven'
+rowOddClass : 'rowodd'
+
+if you need to you can change the CSS classes used.
+
+tableScroll : 'class'
+tableScrollClass : 'scroll'
+
+See table scrolling below
+
+You can also add multiple types and detectors like this:
+
+SortableTable.setup({
+  detectors : [
+    {re: /a RegExp/, name : 'type name'},
+    {re: /another RegExp/, name : 'type name'},
+  ],
+  types : {
+    atype : function(a,b){
+      //comparison function
+    },
+    anothertype : function(a,b){
+      //comparison function
+    }
+  }
+});
+
+API
+
+SortableTable.load();
+
+If you don't want it auto-loaded you can instead call SortableTable.load(); at any time to load via the table selectors specified.
+
+SortableTable.init(table);
+
+Or you can specifically initialise a table by using SortableTable.init(table); where table is a table element reference or ID.
+
+SortableTable.sort(table, index, order);
+
+To sort a specific table column (for example if you want to use an external control) you can call the sort function manually.
+
+    * table = null or a table reference or a table ID, if table is null then index must equal a cell element reference or a cell ID
+    * index = a number or cell element reference or a cell ID : if index is a number then table cannot be null
+    * order = sort direction (optional) 1 (ascending) or -1 (descending)
+
+Table Scrolling
+
+Optionally you can make the table have a fixed header and a fixed height (and/or width), scrolling body. By default if the table also has a class of 'scroll' it will attempt to make this happen.
+
+It does require some CSS to make it work. The minimum CSS required is the following:
+
+.scroll-table-head {
+  width: 800px;
+}
+.scroll-table-body {
+  width: 800px;
+  height: 400px;
+}
+
+The table head is appended to a div element with the class of 'scroll-table-head', and similarly the table body is appended to a div element with the class of 'scroll-table-body'. Both will need identical widths and the body will need an appropriate height.
+
+Also because scrolling seperates the head from the table body, the column widths become fixed and the script writes inline styles to each header cell and body cell to specify the width in pixels. If you are finding the columns don't match up then you should check anything in your CSS that might effect the widths of the column, for example padding on some cells and not on others.
+Options
+
+There are two options for table scrolling, these can be changed in your SortableTable.setup() function call if desired.
+
+tableScroll : 'class'
+
+off | on | class : off = scrolling disabled, on = every sortable table has a fixed header and scrolling body, class = only tables with the class name and made scrollable
+
+tableScrollClass : 'scroll'
+
+if tableScroll above is set to class, this is the class name used. Also this class name is added to all scrollable tables regardless.
+Demo & Download
+
+You can check out a demo here, or download it .
+
+It was created using Prototype v1.5.0_r obtainable via Scriptaculous and included in the .zip file.
